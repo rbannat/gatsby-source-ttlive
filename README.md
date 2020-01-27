@@ -17,7 +17,7 @@ An example site for using this plugin is at https://tt-live-scores.netlify.com/
 Add plugin to `gatsby-config.js`:
 
 
-```json
+```js
 {
     plugins: [
     {
