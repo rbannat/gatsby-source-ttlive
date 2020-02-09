@@ -1,20 +1,19 @@
-const fetch = require("node-fetch")
-const { parseStringPromise } = require("xml2js")
-const { processAssociation } = require("./lib/processAssociation")
-const { processLeague } = require("./lib/processLeague")
-const { processTeam } = require("./lib/processTeam")
-const { processPlayer } = require("./lib/processPlayer")
-const { processFixture } = require("./lib/processFixture")
+const { fetchAndParse, getTeamReportUrl } = require('./lib/helpers')
+const {
+  normalizeAssociations,
+  processAssociation
+} = require('./lib/association')
+const { normalizeLeague, processLeague } = require('./lib/league')
+const { normalizeTeams, processTeam } = require('./lib/team')
+const {
+  getPlayerScores,
+  normalizePlayer,
+  processPlayer
+} = require('./lib/player')
+const { normalizeFixtures, processFixture } = require('./lib/fixture')
 
-const xml2jsOptions = {
-  normalize: true,
-  normalizeTags: true,
-  explicitArray: false,
-  explicitRoot: false,
-}
-
-const baseUrl = "https://bettv.tischtennislive.de/Export/default.aspx"
-const associationsUrl = "https://app.web4sport.de/ajax/Verband.ashx"
+const baseUrl = 'https://bettv.tischtennislive.de/Export/default.aspx'
+const associationsUrl = 'https://app.web4sport.de/ajax/Verband.ashx'
 
 exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   const { createNode } = actions
@@ -31,28 +30,87 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 
   // Create associations
   // TODO: also create child associations
-  const associations = createAssociations(await fetchAndParse(associationsUrl))
+  const associations = normalizeAssociations(
+    await fetchAndParse(associationsUrl)
+  )
 
   // Create league
-  const league = {
-    id: leagueId,
-    association:
-      associations.find(association => association.name === leagueTable.verband)
-        .id || null,
-    name: leagueTable.liga,
-    link: leagueTable.ligalink,
-  }
+  const league = normalizeLeague({ leagueId, associations, leagueTable })
 
-  // Create teams with players and own fixtures
-  const teams = await createTeams(leagueTable.content.mannschaft, leagueId)
+  // Create teams
+  let teams = normalizeTeams(leagueTable.content.mannschaft)
+  let players = []
+  const additionalTeamsData = (
+    await Promise.all(
+      teams.map(async team => {
+        const allPlayers = {}
+        const playersFirstHalf = []
+        const playersSecondHalf = []
+        const {
+          content: {
+            spielplan: { spiel: fixturesData },
+            bilanz: { spieler: playersDataFirstHalf }
+          }
+        } = await fetchAndParse(getTeamReportUrl(baseUrl, team.id, leagueId))
+        playersDataFirstHalf.forEach(playerDataFirstHalf => {
+          const player = normalizePlayer(playerDataFirstHalf)
+          allPlayers[player.id] = {
+            name: player.name,
+            teamId: team.id,
+            playerScoresFirstHalf: getPlayerScores(player)
+          }
+          playersFirstHalf.push({ id: player.id, position: player.position })
+        })
+        const {
+          content: {
+            bilanz: { spieler: playersDataSecondHalf }
+          }
+        } = await fetchAndParse(
+          getTeamReportUrl(baseUrl, team.id, leagueId, (secondHalf = true))
+        )
+        playersDataSecondHalf.forEach(playerDataSecondHalf => {
+          const player = normalizePlayer(playerDataSecondHalf)
+          allPlayers[player.id] = {
+            ...allPlayers[player.id],
+            teamId: team.id,
+            name: player.name,
+            playerScoresSecondHalf: getPlayerScores(player)
+          }
+          playersSecondHalf.push({ id: player.id, position: player.position })
+        })
+        players.push(
+          ...Object.keys(allPlayers).map(key => ({
+            id: key,
+            ...allPlayers[key]
+          }))
+        )
+        return {
+          teamId: team.id,
+          fixtures: normalizeFixtures(fixturesData),
+          playersFirstHalf,
+          playersSecondHalf
+        }
+      })
+    )
+  ).reduce((additionalTeamsData, additionalTeamData) => {
+    const teamId = additionalTeamData.teamId
+    delete additionalTeamData.teamId
+    additionalTeamsData[teamId] = additionalTeamData
+    return additionalTeamsData
+  }, {})
+
+  teams = teams.map(team => ({
+    ...team,
+    ...additionalTeamsData[team.id]
+  }))
 
   // Create fixtures
   // TODO: map teams to fixtures by teamid (team id missing on fixture)
   const scheduleFirstHalf = await fetchAndParse(scheduleFirstHalfUrl)
   const scheduleSecondHalf = await fetchAndParse(scheduleSecondHalfUrl)
   const fixtures = [
-    ...createFixtures(scheduleFirstHalf.content.spiel, true),
-    ...createFixtures(scheduleSecondHalf.content.spiel, false),
+    ...normalizeFixtures(scheduleFirstHalf.content.spiel, true),
+    ...normalizeFixtures(scheduleSecondHalf.content.spiel, false)
   ]
 
   // Create association nodes
@@ -60,7 +118,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     createNode(
       processAssociation({
         association,
-        createNodeId,
+        createNodeId
       })
     )
   })
@@ -69,7 +127,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   createNode(
     processLeague({
       league,
-      createNodeId,
+      createNodeId
     })
   )
 
@@ -78,157 +136,23 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     createNode(
       processFixture({
         fixture,
-        createNodeId,
+        createNodeId
       })
     )
+  })
+  // Create player nodes
+  players.forEach(player => {
+    createNode(processPlayer({ player, createNodeId }))
   })
 
   // Create team nodes
   teams.forEach(team => {
-    // Create player nodes
-    team.players.forEach(player => {
-      createNode(processPlayer({ player, createNodeId, teamId: team.id }))
-    })
     createNode(
       processTeam({
         team,
-        createNodeId,
+        createNodeId
       })
     )
   })
-  // TODO: create league - association node relation
-
   return
-}
-
-async function fetchAndParse(url) {
-  const response = await fetch(url)
-  return parseStringPromise(await response.text(), xml2jsOptions)
-}
-
-function createFixtures(fixturesData, isFirstHalf = null) {
-  return fixturesData.map(
-    ({
-      nr,
-      datum,
-      heimmannschaft,
-      gastmannschaft,
-      ergebnis,
-      kennzeichnung,
-      link,
-    }) => ({
-      id: nr,
-      isFirstHalf,
-      date: datum,
-      homeTeam: heimmannschaft,
-      guestTeam: gastmannschaft,
-      result: ergebnis === "Vorbericht" ? null : getResult(ergebnis),
-      note: kennzeichnung,
-      link,
-    })
-  )
-}
-
-function createPlayers(playersData) {
-  return playersData.map(
-    ({
-      id,
-      position,
-      spielername,
-      teilnahme,
-      pk1,
-      pk2,
-      pk3,
-      pk4,
-      gesamtplus,
-      gesamtminus,
-      leistung,
-      livepz,
-    }) => {
-      return {
-        id,
-        position: parseInt(position),
-        name: spielername,
-        gamesPlayed: teilnahme,
-        pk1Diff: pk1 ? getResult(pk1) : null,
-        pk2Diff: pk2 ? getResult(pk2) : null,
-        pk3Diff: pk3 ? getResult(pk3) : null,
-        pk4Diff: pk4 ? getResult(pk4) : null,
-        won: gesamtplus,
-        lost: gesamtminus,
-        performance: leistung ? parseFloat(leistung.replace(",", ".")) : null,
-        score: parseInt(livepz),
-      }
-    }
-  )
-}
-
-function createAssociations(associationsData) {
-  return associationsData.verband.map(({ id, name, logo, sportart_id }) => ({
-    id,
-    name,
-    sportCategoryId: sportart_id,
-    logo,
-  }))
-}
-
-async function createTeam(
-  {
-    teamid,
-    mannschaft,
-    platz,
-    spiele,
-    siege,
-    unentschieden,
-    niederlagen,
-    saetzedif,
-    spieleplus,
-    spieleminus,
-    spieledif,
-    punkteplus,
-    punkteminus,
-    punktedif,
-  },
-  leagueId
-) {
-  const {
-    content: {
-      spielplan: { spiel: fixturesData },
-      bilanz: { spieler: playersData },
-    },
-  } = await fetchAndParse(getTeamReportUrl(teamid, leagueId))
-  return {
-    id: teamid,
-    name: mannschaft,
-    position: parseInt(platz),
-    gamesPlayed: parseInt(spiele),
-    won: parseInt(siege),
-    drawn: parseInt(unentschieden),
-    lost: parseInt(niederlagen),
-    matchesWon: parseInt(spieleplus),
-    matchesLost: parseInt(spieleminus),
-    matchesDiff: parseInt(spieledif),
-    setsDiff: parseInt(saetzedif),
-    pointsWon: parseInt(punkteplus),
-    pointsLost: parseInt(punkteminus),
-    pointsDiff: parseInt(punktedif),
-    fixtures: createFixtures(fixturesData),
-    players: createPlayers(playersData),
-  }
-}
-
-function createTeams(teamsData, leagueId) {
-  return Promise.all(
-    teamsData.map(teamData => {
-      return createTeam(teamData, leagueId)
-    })
-  )
-}
-
-function getTeamReportUrl(teamId, leagueId) {
-  return `${baseUrl}?TeamID=${teamId}&WettID=${leagueId}&Format=XML&SportArt=96&Area=TeamReport`
-}
-
-function getResult(resultData) {
-  return [...resultData.split(":").map(string => parseInt(string))]
 }
