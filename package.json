@@ -14,8 +14,8 @@
   "author": "René Bannat <r.bannat@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.19.2",
     "gatsby-core-utils": "^1.0.28",
-    "node-fetch": "^2.6.0",
     "xml2js": "^0.4.23"
   },
   "repository": {
