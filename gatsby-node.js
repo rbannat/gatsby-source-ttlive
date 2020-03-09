@@ -22,11 +22,14 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 
   const { leagueId } = configOptions
 
+  const dataUrlFirstHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
+  const dataUrlSecondHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
+
   const scheduleFirstHalfUrl = `${baseUrl}?LigaID=${leagueId}&Format=XML&SportArt=96&Area=Spielplan&Runde=1`
   const scheduleSecondHalfUrl = `${baseUrl}?LigaID=${leagueId}&Format=XML&SportArt=96&Area=Spielplan&Runde=2`
-  const leagueTableUrl = `${baseUrl}?LigaID=${leagueId}&Format=XML&SportArt=96&Area=Tabelle`
 
-  const leagueTable = await fetchAndParse(leagueTableUrl)
+  const dataFirstHalf = await fetchAndParse(dataUrlFirstHalf)
+  const dataSecondHalf = await fetchAndParse(dataUrlSecondHalf)
 
   // Create associations
   // TODO: also create child associations
@@ -35,23 +38,21 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   )
 
   // Create league
-  const league = normalizeLeague({ leagueId, associations, leagueTable })
+  const league = normalizeLeague(dataFirstHalf.staffel)
 
   // Create teams
-  let teams = normalizeTeams(leagueTable.content.mannschaft)
+  let teams = normalizeTeams(dataFirstHalf.teams.mannschaft)
   let players = []
-  const additionalTeamsData = (
-    await Promise.all(
-      teams.map(async team => {
+  const additionalTeamsData = 
+      teams.map(team => {
         const allPlayers = {}
         const playersFirstHalf = []
         const playersSecondHalf = []
-        const {
-          content: {
-            spielplan: { spiel: fixturesData },
-            bilanz: { spieler: playersDataFirstHalf }
-          }
-        } = await fetchAndParse(getTeamReportUrl(baseUrl, team.id, leagueId))
+        const {spieler: playersDataFirstHalf 
+        } = dataFirstHalf.teams.mannschaft.find((mannschaft => mannschaft.teamid === team.id)).bilanz
+        const {spieler: playersDataSecondHalf 
+        } = dataSecondHalf.teams.mannschaft.find((mannschaft => mannschaft.teamid === team.id)).bilanz
+        
         playersDataFirstHalf.forEach(playerDataFirstHalf => {
           const player = normalizePlayer(playerDataFirstHalf)
           allPlayers[player.id] = {
@@ -61,13 +62,6 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
           }
           playersFirstHalf.push({ id: player.id, position: player.position })
         })
-        const {
-          content: {
-            bilanz: { spieler: playersDataSecondHalf }
-          }
-        } = await fetchAndParse(
-          getTeamReportUrl(baseUrl, team.id, leagueId, (secondHalf = true))
-        )
         playersDataSecondHalf.forEach(playerDataSecondHalf => {
           const player = normalizePlayer(playerDataSecondHalf)
           allPlayers[player.id] = {
@@ -86,13 +80,10 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         )
         return {
           teamId: team.id,
-          fixtures: normalizeFixtures(fixturesData),
           playersFirstHalf,
           playersSecondHalf
         }
-      })
-    )
-  ).reduce((additionalTeamsData, additionalTeamData) => {
+      }).reduce((additionalTeamsData, additionalTeamData) => {
     const teamId = additionalTeamData.teamId
     delete additionalTeamData.teamId
     additionalTeamsData[teamId] = additionalTeamData
