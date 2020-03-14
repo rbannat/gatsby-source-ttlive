@@ -29,9 +29,6 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   )
   await Promise.all(
     leagueIds.map(async leagueId => {
-      const scheduleFirstHalfUrl = `${baseUrl}?LigaID=${leagueId}&Format=XML&SportArt=96&Area=Spielplan&Runde=1`
-      const scheduleSecondHalfUrl = `${baseUrl}?LigaID=${leagueId}&Format=XML&SportArt=96&Area=Spielplan&Runde=2`
-
       const dataUrlFirstHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
       const dataUrlSecondHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
 
@@ -114,12 +111,9 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       }))
 
       // Create fixtures
-      // TODO: map teams to fixtures by teamid (team id missing on fixture)
-      const scheduleFirstHalf = await fetchAndParse(scheduleFirstHalfUrl)
-      const scheduleSecondHalf = await fetchAndParse(scheduleSecondHalfUrl)
       const fixtures = [
-        ...normalizeFixtures(scheduleFirstHalf.content.spiel, true),
-        ...normalizeFixtures(scheduleSecondHalf.content.spiel, false),
+        ...normalizeFixtures(dataFirstHalf.spielplan.runde.spiel, true),
+        ...normalizeFixtures(dataSecondHalf.spielplan.runde.spiel, false),
       ]
 
       // Create association nodes
