@@ -27,7 +27,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     await fetchAndParse(associationsUrl)
   )
   // Create association nodes
-  associations.forEach(association => {
+  associations.forEach((association) => {
     createNode(
       processAssociation({
         association,
@@ -46,26 +46,32 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     // Create league
     const league = normalizeLeague(dataFirstHalf.staffel)
 
+    // Create fixtures
+    const fixtures = [
+      ...normalizeFixtures(dataFirstHalf.spielplan.runde.spiel, true),
+      ...normalizeFixtures(dataSecondHalf.spielplan.runde.spiel, false),
+    ]
+
     // Create teams
     let teams = normalizeTeams(dataFirstHalf.teams.mannschaft, league.id)
     let players = []
     const additionalTeamsData = teams
-      .map(team => {
+      .map((team) => {
         const allPlayers = {}
         const playersFirstHalf = []
         const playersSecondHalf = []
         const {
           spieler: playersDataFirstHalf,
         } = dataFirstHalf.teams.mannschaft.find(
-          mannschaft => mannschaft.teamid === team.id
+          (mannschaft) => mannschaft.teamid === team.id
         ).bilanz
         const {
           spieler: playersDataSecondHalf,
         } = dataSecondHalf.teams.mannschaft.find(
-          mannschaft => mannschaft.teamid === team.id
+          (mannschaft) => mannschaft.teamid === team.id
         ).bilanz
         if (playersDataFirstHalf && playersDataFirstHalf.length) {
-          playersDataFirstHalf.forEach(playerDataFirstHalf => {
+          playersDataFirstHalf.forEach((playerDataFirstHalf) => {
             const player = normalizePlayer(playerDataFirstHalf)
             allPlayers[player.id] = {
               name: player.name,
@@ -79,7 +85,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
           })
         }
         if (playersDataSecondHalf && playersDataSecondHalf.length) {
-          playersDataSecondHalf.forEach(playerDataSecondHalf => {
+          playersDataSecondHalf.forEach((playerDataSecondHalf) => {
             const player = normalizePlayer(playerDataSecondHalf)
             allPlayers[player.id] = {
               ...allPlayers[player.id],
@@ -95,7 +101,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         }
 
         players.push(
-          ...Object.keys(allPlayers).map(key => ({
+          ...Object.keys(allPlayers).map((key) => ({
             id: key,
             ...allPlayers[key],
           }))
@@ -113,16 +119,10 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         return additionalTeamsData
       }, {})
 
-    teams = teams.map(team => ({
+    teams = teams.map((team) => ({
       ...team,
       ...additionalTeamsData[team.id],
     }))
-
-    // Create fixtures
-    const fixtures = [
-      ...normalizeFixtures(dataFirstHalf.spielplan.runde.spiel, true),
-      ...normalizeFixtures(dataSecondHalf.spielplan.runde.spiel, false),
-    ]
 
     // Create league node
     createNode(
@@ -133,7 +133,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     )
 
     // Create fixture nodes
-    fixtures.forEach(fixture => {
+    fixtures.forEach((fixture) => {
       createNode(
         processFixture({
           fixture,
@@ -141,17 +141,24 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         })
       )
     })
+
     // Create player nodes
-    players.forEach(player => {
-      createNode(processPlayer({ player, createNodeId }))
+    players.forEach((player) => {
+      createNode(
+        processPlayer({
+          player,
+          createNodeId,
+        })
+      )
     })
 
     // Create team nodes
-    teams.forEach(team => {
+    teams.forEach((team) => {
       createNode(
         processTeam({
           team,
           createNodeId,
+          fixtures,
         })
       )
     })
