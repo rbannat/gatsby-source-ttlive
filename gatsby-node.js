@@ -1,18 +1,13 @@
 const { fetchAndParse } = require('./lib/helpers')
-const {
-  normalizeAssociations,
-  processAssociation,
-} = require('./lib/association')
-const { normalizeLeague, processLeague } = require('./lib/league')
-const { normalizeTeams, processTeam } = require('./lib/team')
+const { createAssociationNodes } = require('./lib/association')
+const { createLeagueNode } = require('./lib/league')
+const { createFixtureNodes } = require('./lib/fixture')
+const { normalizeTeams, createTeamNodes } = require('./lib/team')
 const {
   getPlayerScores,
   normalizePlayer,
-  processPlayer,
+  createPlayerNodes,
 } = require('./lib/player')
-const { normalizeFixtures, processFixture } = require('./lib/fixture')
-
-const associationsUrl = 'https://app.web4sport.de/ajax/Verband.ashx'
 
 exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   const { createNode } = actions
@@ -21,39 +16,30 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 
   const { leagueIds } = configOptions
 
-  // Create associations
-  // TODO: also create child associations
-  const associations = normalizeAssociations(
-    await fetchAndParse(associationsUrl)
-  )
-  // Create association nodes
-  associations.forEach((association) => {
-    createNode(
-      processAssociation({
-        association,
-        createNodeId,
-      })
-    )
-  })
+  await createAssociationNodes({ createNode, createNodeId })
 
   for (const leagueId of leagueIds) {
-    const dataUrlFirstHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
-    const dataUrlSecondHalf = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
+    const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
+    const dataSecondHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
 
-    const dataFirstHalf = await fetchAndParse(dataUrlFirstHalf)
-    const dataSecondHalf = await fetchAndParse(dataUrlSecondHalf)
+    const dataFirstHalf = await fetchAndParse(dataFirstHalfUrl)
+    const dataSecondHalf = await fetchAndParse(dataSecondHalfUrl)
 
-    // Create league
-    const league = normalizeLeague(dataFirstHalf.staffel)
+    await createLeagueNode({
+      leagueData: dataFirstHalf.staffel,
+      createNode,
+      createNodeId,
+    })
 
-    // Create fixtures
-    const fixtures = [
-      ...normalizeFixtures(dataFirstHalf.spielplan.runde.spiel, true),
-      ...normalizeFixtures(dataSecondHalf.spielplan.runde.spiel, false),
-    ]
+    const fixtures = await createFixtureNodes({
+      fixtureDataFirstHalf: dataFirstHalf.spielplan.runde.spiel,
+      fixtureDataSecondHalf: dataSecondHalf.spielplan.runde.spiel,
+      createNode,
+      createNodeId,
+    })
 
-    // Create teams
-    let teams = normalizeTeams(dataFirstHalf.teams.mannschaft, league.id)
+    // Normalize teams and collect players
+    let teams = normalizeTeams(dataFirstHalf.teams.mannschaft, leagueId)
     let players = []
     const additionalTeamsData = teams
       .map((team) => {
@@ -124,44 +110,8 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       ...additionalTeamsData[team.id],
     }))
 
-    // Create league node
-    createNode(
-      processLeague({
-        league,
-        createNodeId,
-      })
-    )
-
-    // Create fixture nodes
-    fixtures.forEach((fixture) => {
-      createNode(
-        processFixture({
-          fixture,
-          createNodeId,
-        })
-      )
-    })
-
-    // Create player nodes
-    players.forEach((player) => {
-      createNode(
-        processPlayer({
-          player,
-          createNodeId,
-        })
-      )
-    })
-
-    // Create team nodes
-    teams.forEach((team) => {
-      createNode(
-        processTeam({
-          team,
-          createNodeId,
-          fixtures,
-        })
-      )
-    })
+    createPlayerNodes({ players, createNode, createNodeId })
+    createTeamNodes({ teams, fixtures, createNode, createNodeId })
   }
   return
 }
