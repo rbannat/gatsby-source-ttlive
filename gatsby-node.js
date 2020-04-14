@@ -3,11 +3,7 @@ const { createAssociationNodes } = require('./lib/association')
 const { createLeagueNode } = require('./lib/league')
 const { createFixtureNodes } = require('./lib/fixture')
 const { normalizeTeams, createTeamNodes } = require('./lib/team')
-const {
-  getPlayerScores,
-  normalizePlayer,
-  createPlayerNodes,
-} = require('./lib/player')
+const { normalizePlayer, createPlayerNodes } = require('./lib/player')
 
 exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   const { createNode } = actions
@@ -38,78 +34,59 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       createNodeId,
     })
 
-    // Normalize teams and collect players
-    let teams = normalizeTeams(dataFirstHalf.teams.mannschaft, leagueId)
-    let players = []
-    const additionalTeamsData = teams
-      .map((team) => {
-        const allPlayers = {}
-        const playersFirstHalf = []
-        const playersSecondHalf = []
-        const {
-          spieler: playersDataFirstHalf,
-        } = dataFirstHalf.teams.mannschaft.find(
-          (mannschaft) => mannschaft.teamid === team.id
-        ).bilanz
-        const {
-          spieler: playersDataSecondHalf,
-        } = dataSecondHalf.teams.mannschaft.find(
-          (mannschaft) => mannschaft.teamid === team.id
-        ).bilanz
-        if (playersDataFirstHalf && playersDataFirstHalf.length) {
-          playersDataFirstHalf.forEach((playerDataFirstHalf) => {
-            const player = normalizePlayer(playerDataFirstHalf)
-            allPlayers[player.id] = {
-              name: player.name,
-              teamId: team.id,
-              playerScoresFirstHalf: getPlayerScores(player),
-            }
-            playersFirstHalf.push({
-              id: player.id,
-              position: player.position,
-            })
-          })
-        }
-        if (playersDataSecondHalf && playersDataSecondHalf.length) {
-          playersDataSecondHalf.forEach((playerDataSecondHalf) => {
-            const player = normalizePlayer(playerDataSecondHalf)
-            allPlayers[player.id] = {
-              ...allPlayers[player.id],
-              teamId: team.id,
-              name: player.name,
-              playerScoresSecondHalf: getPlayerScores(player),
-            }
-            playersSecondHalf.push({
-              id: player.id,
-              position: player.position,
-            })
-          })
-        }
+    const teamsDataFirstHalf = dataFirstHalf.teams.mannschaft
+    const teamsDataSecondHalf = dataSecondHalf.teams.mannschaft
 
-        players.push(
-          ...Object.keys(allPlayers).map((key) => ({
-            id: key,
-            ...allPlayers[key],
-          }))
-        )
-        return {
-          teamId: team.id,
-          playersFirstHalf,
-          playersSecondHalf,
-        }
-      })
-      .reduce((additionalTeamsData, additionalTeamData) => {
-        const teamId = additionalTeamData.teamId
-        delete additionalTeamData.teamId
-        additionalTeamsData[teamId] = additionalTeamData
-        return additionalTeamsData
-      }, {})
+    // Normalize teams
+    let teams = normalizeTeams(
+      teamsDataFirstHalf,
+      teamsDataSecondHalf,
+      leagueId
+    )
 
-    teams = teams.map((team) => ({
-      ...team,
-      ...additionalTeamsData[team.id],
-    }))
+    // Normalize players
+    let playersFirstHalf = teamsDataFirstHalf.reduce((players, teamData) => {
+      const playersData = teamData.bilanz.spieler
+      if (!playersData || !playersData.length) {
+        return players
+      }
+      return [
+        ...players,
+        ...playersData.map((playerData) => {
+          return normalizePlayer(playerData, teamData.teamid)
+        }),
+      ]
+    }, [])
 
+    let playersSecondHalf = teamsDataSecondHalf.reduce((players, teamData) => {
+      const playersData = teamData.bilanz.spieler
+      if (!playersData || !playersData.length) {
+        return players
+      }
+      return [
+        ...players,
+        ...playersData.map((playerData) => {
+          return normalizePlayer(playerData, teamData.teamid, true)
+        }),
+      ]
+    }, [])
+
+    // Merge players
+    const players = playersFirstHalf
+
+    for (const playerSecondHalf of playersSecondHalf) {
+      const existingPlayer = players.find(
+        (player) => player.id === playerSecondHalf.id
+      )
+      if (existingPlayer) {
+        existingPlayer.scores = [
+          ...existingPlayer.scores,
+          ...playerSecondHalf.scores,
+        ]
+      } else {
+        players.push(playerSecondHalf)
+      }
+    }
     createPlayerNodes({ players, createNode, createNodeId })
     createTeamNodes({ teams, fixtures, createNode, createNodeId })
   }
