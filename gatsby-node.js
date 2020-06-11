@@ -21,13 +21,13 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     const dataFirstHalf = await fetchAndParse(dataFirstHalfUrl)
     const dataSecondHalf = await fetchAndParse(dataSecondHalfUrl)
 
-    await createLeagueNode({
+    createLeagueNode({
       leagueData: dataFirstHalf.staffel,
       createNode,
       createNodeId,
     })
 
-    const fixtures = await createFixtureNodes({
+    const fixtures = createFixtureNodes({
       fixtureDataFirstHalf: dataFirstHalf.spielplan.runde.spiel,
       fixtureDataSecondHalf: dataSecondHalf.spielplan.runde.spiel,
       createNode,
