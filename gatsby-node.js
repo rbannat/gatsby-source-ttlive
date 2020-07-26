@@ -28,6 +28,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     })
 
     const fixtures = createFixtureNodes({
+      leagueId,
       fixtureDataFirstHalf: dataFirstHalf.spielplan
         ? dataFirstHalf.spielplan.runde.spiel
         : null,

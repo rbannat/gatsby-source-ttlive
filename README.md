@@ -2,7 +2,7 @@
 
 This is a Gatsby source plugin that sources nodes from [TT-Live](https://bettv.tischtennislive.de).
 
-An example site for using this plugin is at https://tt-live-scores.netlify.com/
+An example site for using this plugin is at https://tt-live-scores.netlify.app/
 
 ## How to install
 
@@ -10,9 +10,9 @@ An example site for using this plugin is at https://tt-live-scores.netlify.com/
 
 ## Available options
 
-| Option   | Description              | Example |
-| -------- | ------------------------ | ------- |
-| leagueId | Id of the TT-Live league | 12345   |  |
+| Option    | Description                                    | Example   |
+| --------- | ---------------------------------------------- | --------- |
+| leagueIds | Ids of the TT-Live leagues to source data from | [ 12345 ] |  |
 
 ## Example of usage
 
@@ -24,41 +24,42 @@ Add plugin to `gatsby-config.js`:
     {
       resolve: `gatsby-source-ttlive`,
       options: {
-        leagueId: 12345,
+        leagueIds: [ 12345 ],
       },
     },
   ],
 }
 ```
 
-## How to query for data
+## How to query data
 
-This is an example query to load all fixtures of the league:
+This is an example query to load all fixtures of a league:
 
 ```graphql
-query {
-  allFixture {
-    edges {
-      node {
-        isFirstHalf
-        date
-        result
-        guestTeam {
-          ... on Team {
-            id
-            name
-            shortName
-          }
+query FixturesByLeague($leagueId: String!) {
+  allFixture(filter: { league: { id: { eq: $leagueId } } }) {
+    nodes {
+      date
+      guestTeam {
+        ... on Team {
+          id
+          name
+          shortName
         }
-        homeTeam {
-          ... on Team {
-            id
-            name
-            shortName
-          }
-        }
-        link
       }
+      homeTeam {
+        ... on Team {
+          id
+          name
+          shortName
+        }
+      }
+      id
+      isFirstHalf
+      link
+      note
+      nr
+      result
     }
   }
 }
