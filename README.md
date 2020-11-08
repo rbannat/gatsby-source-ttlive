@@ -2,7 +2,7 @@
 
 This is a Gatsby source plugin that sources nodes from [TT-Live](https://bettv.tischtennislive.de).
 
-An example site for using this plugin is at https://tt-live-scores.netlify.app/
+An example site that uses this plugin can be found here: https://tt-live-scores.netlify.app/.
 
 ## How to install
 
