@@ -6,59 +6,43 @@ An example site that uses this plugin can be found here: https://tt-live-scores.
 
 ## How to install
 
-`npm install --save gatsby-source-ttlive`
+1. Install dependency
 
-## Available options
+   ```bash
+   npm install --save gatsby-source-ttlive
+   ```
 
-| Option    | Description                                    | Example   |
-| --------- | ---------------------------------------------- | --------- |
-| leagueIds | Ids of the TT-Live leagues to source data from | [ 12345 ] |  |
+2. Add to _`gatsby-config.js`_
 
-## Example of usage
+   ```js
+     {
+         plugins: [
+         `gatsby-source-ttlive`,
+       ],
+     }
+   ```
 
-Add plugin to `gatsby-config.js`:
+## Example query
 
-```js
-{
-    plugins: [
-    {
-      resolve: `gatsby-source-ttlive`,
-      options: {
-        leagueIds: [ 12345 ],
-      },
-    },
-  ],
-}
-```
-
-## How to query data
-
-This is an example query to load all fixtures of a league:
+This is an example query for loading all fixtures of a league sorted by date in descending order:
 
 ```graphql
-query FixturesByLeague($leagueId: String!) {
-  allFixture(filter: { league: { id: { eq: $leagueId } } }) {
+query LatestFixturesByLeagueId($leagueId: String!) {
+  allFixture(
+    filter: { league: { id: { eq: $leagueId } } }
+    sort: { order: DESC, fields: date }
+  ) {
     nodes {
       date
-      guestTeam {
-        ... on Team {
-          id
-          name
-          shortName
-        }
-      }
-      homeTeam {
-        ... on Team {
-          id
-          name
-          shortName
-        }
-      }
-      id
-      isFirstHalf
       link
       note
       nr
+      homeTeam {
+        name
+      }
+      guestTeam {
+        name
+      }
       result
     }
   }
