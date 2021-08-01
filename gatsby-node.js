@@ -21,8 +21,8 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
     for (const leagueId of group.leagueIds) {
       const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
       const dataSecondHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
-
       const dataFirstHalf = await fetchAndParse(dataFirstHalfUrl)
+      if (dataFirstHalf.error) continue // e. g. staffel not published
       const dataSecondHalf = await fetchAndParse(dataSecondHalfUrl)
 
       createLeagueNode({
@@ -107,7 +107,6 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       createTeamNodes({ teams, fixtures, createNode, createNodeId })
     }
   }
-
   createGroupNodes({
     groups,
     createNode,
@@ -129,6 +128,10 @@ exports.createSchemaCustomization = ({ actions }) => {
       won: Int
       lost: Int
       gamesPlayed: Int
+    }
+
+    type Fixture implements Node {
+      result: [Int]
     }
   `
   createTypes(typeDefs)
