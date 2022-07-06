@@ -15,9 +15,9 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.16.7",
-    "axios": "^0.24.0",
+    "axios": "^0.27.2",
     "bottleneck": "^2.19.5",
-    "gatsby-core-utils": "^3.6.0-next.0",
+    "gatsby-core-utils": "^3.18.0",
     "xml2js": "^0.4.23"
   },
   "repository": {
@@ -34,7 +34,7 @@
     "prettier": "^2.5.1"
   },
   "peerDependencies": {
-    "gatsby": "^4.0.0-next"
+    "gatsby": "^4.4.0"
   },
   "engines": {
     "node": ">=14.15.0"
