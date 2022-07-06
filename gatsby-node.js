@@ -22,7 +22,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
       const dataSecondHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
       const dataFirstHalf = await fetchAndParse(dataFirstHalfUrl)
-      if (dataFirstHalf.error) continue // e. g. staffel not published
+      if (dataFirstHalf.error || !!!dataFirstHalf.teams.mannschaft) continue // e. g. staffel not published
       const dataSecondHalf = await fetchAndParse(dataSecondHalfUrl)
 
       createLeagueNode({
