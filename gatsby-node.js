@@ -122,6 +122,11 @@ exports.createSchemaCustomization = ({ actions }) => {
   const typeDefs = `
     type Fixture implements Node {
       id: ID!
+      date: Date
+      link: String
+      homeTeam: Node
+      guestTeam: Node
+      league: Node
     }
 
     type PlayerScore implements Node {
@@ -132,6 +137,10 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type Fixture implements Node {
       result: [Int]
+    }
+
+    type Team implements Node {
+      fixtures: [Fixture]
     }
   `
   createTypes(typeDefs)
