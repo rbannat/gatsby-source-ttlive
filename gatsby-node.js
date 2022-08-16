@@ -118,15 +118,16 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 // Create type defs for when there is no data to infer the type from
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions
-
-  const typeDefs = `
+  const typeDefs = [
+    `
     type Fixture implements Node {
       id: ID!
       date: Date
       link: String
-      homeTeam: Node
-      guestTeam: Node
-      league: Node
+      homeTeam: Team @link
+      guestTeam: Team @link
+      league: League @link
+      result: [Int]
     }
 
     type PlayerScore implements Node {
@@ -135,13 +136,52 @@ exports.createSchemaCustomization = ({ actions }) => {
       gamesPlayed: Int
     }
 
-    type Fixture implements Node {
-      result: [Int]
-    }
-
     type Team implements Node {
+      league: League @link
       fixtures: [Fixture]
     }
-  `
+
+    type League implements Node {
+      association: Association @link
+    }
+  `,
+  ]
   createTypes(typeDefs)
+}
+
+exports.createResolvers = ({ createResolvers }) => {
+  const resolvers = {
+    Team: {
+      fixtures: {
+        type: ['Fixture'],
+        resolve: async (source, args, context, info) => {
+          const { entries: homeFixtures } = await context.nodeModel.findAll({
+            query: {
+              filter: {
+                homeTeam: {
+                  id: { eq: source.id },
+                },
+              },
+            },
+            type: 'Fixture',
+          })
+          const { entries: guestFixtures } = await context.nodeModel.findAll({
+            query: {
+              filter: {
+                guestTeam: {
+                  id: { eq: source.id },
+                },
+              },
+            },
+            type: 'Fixture',
+          })
+          guestFixtures.forEach((fixture) => console.log(fixture.date))
+          return homeFixtures.mergeSorted(guestFixtures, (a, b) =>
+            a.date > b.date ? 1 : -1
+          )
+        },
+      },
+    },
+  }
+  createResolvers(resolvers)
 }
