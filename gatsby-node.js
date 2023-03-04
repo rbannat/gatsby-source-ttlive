@@ -1,6 +1,11 @@
+/**
+ * @typedef { import("./lib/types").Team } Team
+ */
+
 const { fetchAndParse } = require('./lib/helpers')
 const { createAssociationNodes } = require('./lib/association')
 const { createGroupNodes, normalizeGroups } = require('./lib/group')
+const { createClubNodes } = require('./lib/club')
 const { createLeagueNode } = require('./lib/league')
 const { createFixtureNodes } = require('./lib/fixture')
 const { normalizeTeams, createTeamNodes } = require('./lib/team')
@@ -15,8 +20,14 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 
   const groupsUrl = `https://app.web4sport.de/ajax/tischtennis/staffeln.ashx?VerbandID=${associationId}`
   const groupsData = await fetchAndParse(groupsUrl)
+  // Damen, Herren, ...
   const groups = normalizeGroups(groupsData)
+
   await createAssociationNodes({ createNode, createNodeId })
+
+  /** @type {[]} */
+  let clubs = []
+
   for (const group of groups) {
     for (const leagueId of group.leagueIds) {
       const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
@@ -51,11 +62,20 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         : [dataSecondHalf.teams.mannschaft]
 
       // Normalize teams
+      /** @type {Team[]} */
       let teams = normalizeTeams(
         teamsDataFirstHalf,
         teamsDataSecondHalf,
         leagueId
       )
+
+      clubs = [
+        ...clubs,
+        ...teams.map((team) => ({
+          name: team.clubName,
+          shortName: team.clubShortName,
+        })),
+      ]
 
       // Normalize players
       let playersFirstHalf = teamsDataFirstHalf.reduce((players, teamData) => {
@@ -107,6 +127,14 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       createTeamNodes({ teams, fixtures, createNode, createNodeId })
     }
   }
+
+  clubs = [...new Map(clubs.map((club) => [club['shortName'], club])).values()]
+  createClubNodes({
+    clubs,
+    createNode,
+    createNodeId,
+  })
+
   createGroupNodes({
     groups,
     createNode,
@@ -136,8 +164,13 @@ exports.createSchemaCustomization = ({ actions }) => {
       gamesPlayed: Int
     }
 
+    type Club implements Node {
+      teams: [Team] @link(by: "club.id", from: "id")
+    }
+
     type Team implements Node {
       league: League @link
+      club: Club @link
       fixtures: [Fixture]
     }
 
@@ -175,7 +208,6 @@ exports.createResolvers = ({ createResolvers }) => {
             },
             type: 'Fixture',
           })
-          guestFixtures.forEach((fixture) => console.log(fixture.date))
           return homeFixtures.mergeSorted(guestFixtures, (a, b) =>
             a.date > b.date ? 1 : -1
           )
