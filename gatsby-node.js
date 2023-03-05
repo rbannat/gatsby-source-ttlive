@@ -35,9 +35,9 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       const dataFirstHalf = await fetchAndParse(dataFirstHalfUrl)
       if (dataFirstHalf.error || !!!dataFirstHalf.teams.mannschaft) continue // e. g. staffel not published
       const dataSecondHalf = await fetchAndParse(dataSecondHalfUrl)
-
       createLeagueNode({
         leagueData: dataFirstHalf.staffel,
+        groupName: group.name,
         createNode,
         createNodeId,
       })
@@ -167,6 +167,10 @@ exports.createSchemaCustomization = ({ actions }) => {
     type Club implements Node {
       teams: [Team] @link(by: "club.id", from: "id")
     }
+    
+    type Group implements Node {
+      leagues: [League] @link(by: "group.id", from: "id")
+    }
 
     type Team implements Node {
       league: League @link
@@ -176,6 +180,7 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type League implements Node {
       association: Association @link
+      group: Group @link
     }
   `,
   ]
