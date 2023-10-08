@@ -27,6 +27,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
 
   /** @type {[]} */
   let clubs = []
+  let players = []
 
   for (const group of groups) {
     for (const leagueId of group.leagueIds) {
@@ -66,7 +67,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
       let teams = normalizeTeams(
         teamsDataFirstHalf,
         teamsDataSecondHalf,
-        leagueId
+        leagueId,
       )
 
       clubs = [
@@ -77,21 +78,22 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
         })),
       ]
 
-      // Normalize players
-      let playersFirstHalf = teamsDataFirstHalf.reduce((players, teamData) => {
-        const playersData = teamData.bilanz.spieler
-        if (!playersData || !playersData.length) {
-          return players
-        }
-        return [
-          ...players,
-          ...playersData.map((playerData) => {
-            return normalizePlayer(playerData, teamData.teamid)
-          }),
-        ]
-      }, [])
-
-      let playersSecondHalf = teamsDataSecondHalf.reduce(
+      const firstHalfPlayers = teamsDataFirstHalf.reduce(
+        (players, teamData) => {
+          const playersData = teamData.bilanz.spieler
+          if (!playersData || !playersData.length) {
+            return players
+          }
+          return [
+            ...players,
+            ...playersData.map((playerData) => {
+              return normalizePlayer(playerData, teamData.teamid)
+            }),
+          ]
+        },
+        [],
+      )
+      const secondHalfPlayers = teamsDataSecondHalf.reduce(
         (players, teamData) => {
           const playersData = teamData.bilanz.spieler
           if (!playersData || !playersData.length) {
@@ -104,31 +106,32 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
             }),
           ]
         },
-        []
+        [],
       )
 
-      // Merge players
-      const players = playersFirstHalf
+      players = [...players, ...firstHalfPlayers, ...secondHalfPlayers]
 
-      for (const playerSecondHalf of playersSecondHalf) {
-        const existingPlayer = players.find(
-          (player) => player.id === playerSecondHalf.id
-        )
-        if (existingPlayer) {
-          existingPlayer.scores = [
-            ...existingPlayer.scores,
-            ...playerSecondHalf.scores,
-          ]
-        } else {
-          players.push(playerSecondHalf)
-        }
-      }
-      createPlayerNodes({ players, createNode, createNodeId })
       createTeamNodes({ teams, fixtures, createNode, createNodeId })
     }
   }
 
+  // Merge players
+  players = players.reduce((players, newPlayer) => {
+    const existingPlayer = players.find((player) => player.id === newPlayer.id)
+
+    if (existingPlayer) {
+      existingPlayer.scores = [...existingPlayer.scores, ...newPlayer.scores]
+    } else {
+      players.push(newPlayer)
+    }
+
+    return players
+  }, [])
+
+  createPlayerNodes({ players, createNode, createNodeId })
+
   clubs = [...new Map(clubs.map((club) => [club['shortName'], club])).values()]
+
   createClubNodes({
     clubs,
     createNode,
@@ -214,7 +217,7 @@ exports.createResolvers = ({ createResolvers }) => {
             type: 'Fixture',
           })
           return homeFixtures.mergeSorted(guestFixtures, (a, b) =>
-            a.date > b.date ? 1 : -1
+            a.date > b.date ? 1 : -1,
           )
         },
       },
