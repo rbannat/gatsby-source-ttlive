@@ -165,6 +165,10 @@ exports.createSchemaCustomization = ({ actions }) => {
       won: Int
       lost: Int
       gamesPlayed: Int
+      pk1Diff: Int
+      pk2Diff: Int
+      pk3Diff: Int
+      pk4Diff: Int
     }
 
     type Club implements Node {
