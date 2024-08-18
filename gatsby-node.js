@@ -29,7 +29,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   let clubs = []
   let players = []
 
-  for (const group of groups) {
+  for (const group of [groups[0]]) {
     for (const leagueId of group.leagueIds) {
       const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
       const dataSecondHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
@@ -165,10 +165,10 @@ exports.createSchemaCustomization = ({ actions }) => {
       won: Int
       lost: Int
       gamesPlayed: Int
-      pk1Diff: Int
-      pk2Diff: Int
-      pk3Diff: Int
-      pk4Diff: Int
+      pk1Diff: [Int]
+      pk2Diff: [Int]
+      pk3Diff: [Int]
+      pk4Diff: [Int]
     }
 
     type Club implements Node {
