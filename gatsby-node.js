@@ -29,7 +29,7 @@ exports.sourceNodes = async ({ actions, createNodeId }, configOptions) => {
   let clubs = []
   let players = []
 
-  for (const group of [groups[0]]) {
+  for (const group of groups) {
     for (const leagueId of group.leagueIds) {
       const dataFirstHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=1&SpielerRunde=1`
       const dataSecondHalfUrl = `https://app.web4sport.de/Ajax/Tischtennis/Staffel_Komplett.aspx?StaffelID=${leagueId}&PlanRunde=2&SpielerRunde=2`
