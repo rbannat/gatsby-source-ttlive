@@ -173,6 +173,7 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type Club implements Node {
       teams: [Team] @link(by: "club.id", from: "id")
+      logo: ClubLogosJson @link(by: "clubId", from: "id")
     }
     
     type Group implements Node {
@@ -188,6 +189,10 @@ exports.createSchemaCustomization = ({ actions }) => {
     type League implements Node {
       association: Association @link
       group: Group @link
+    }
+
+    type ClubLogosJson implements Node {
+      club: Club @link(by: "id", from: "clubId")
     }
   `,
   ]
