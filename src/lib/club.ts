@@ -1,17 +1,33 @@
-const { createContentDigest } = require(`gatsby-core-utils`)
+import { Actions, NodePluginArgs } from 'gatsby'
+import { createContentDigest } from 'gatsby-core-utils'
+import { Club } from '@/api'
 
-exports.createClubNodes = ({ clubs, createNode, createNodeId }) => {
+export const createClubNodes = ({
+  clubs,
+  createNode,
+  createNodeId,
+}: {
+  clubs: Club[]
+  createNode: Actions['createNode']
+  createNodeId: NodePluginArgs['createNodeId']
+}) => {
   clubs.forEach((club) => {
     createNode(
       processClub({
         club,
         createNodeId,
-      })
+      }),
     )
   })
 }
 
-function processClub({ club, createNodeId }) {
+function processClub({
+  club,
+  createNodeId,
+}: {
+  club: Club
+  createNodeId: NodePluginArgs['createNodeId']
+}) {
   const nodeId = createNodeId(`Club${club.name}`)
 
   const nodeContent = JSON.stringify(club)

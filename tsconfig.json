@@ -1,0 +1,22 @@
+{
+  "exclude": ["node_modules", "dist", "public", ".cache", "__tests__"],
+  "include": ["./src/**/*"],
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "declaration": true,
+    "target": "ES6",
+    "moduleResolution": "node",
+    "strict": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "lib": ["es2016", "dom"],
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

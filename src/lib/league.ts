@@ -1,31 +1,36 @@
-const { createContentDigest } = require(`gatsby-core-utils`)
+import { Actions, NodePluginArgs } from 'gatsby'
+import { createContentDigest } from 'gatsby-core-utils'
+import { League } from '@/api'
 
-exports.createLeagueNode = ({
-  leagueData,
+export const createLeagueNode = ({
+  league,
   groupName,
   createNode,
   createNodeId,
+}: {
+  league: League
+  groupName: string
+  createNode: Actions['createNode']
+  createNodeId: NodePluginArgs['createNodeId']
 }) => {
-  const league = normalizeLeague(leagueData)
   createNode(
     processLeague({
       league,
       groupName,
       createNodeId,
-    })
+    }),
   )
 }
 
-function normalizeLeague({ staffelid, staffelname, staffelkurz, verbandid }) {
-  return {
-    id: staffelid,
-    associationId: verbandid,
-    name: staffelname,
-    shortName: staffelkurz,
-  }
-}
-
-function processLeague({ league, groupName, createNodeId }) {
+function processLeague({
+  league,
+  groupName,
+  createNodeId,
+}: {
+  league: League
+  groupName: string
+  createNodeId: NodePluginArgs['createNodeId']
+}) {
   const nodeId = createNodeId(`League${league.id}`)
   // create node relationship
   league.association = createNodeId(`Association${league.associationId}`)
@@ -35,8 +40,10 @@ function processLeague({ league, groupName, createNodeId }) {
   league.group = createNodeId(`Group${groupName}`)
 
   const nodeContent = JSON.stringify(league)
-  const nodeData = Object.assign({}, league, {
+  const nodeData = {
+    ...league,
     id: nodeId,
+    ogiginalId: league.id,
     parent: null,
     children: [],
     internal: {
@@ -44,6 +51,6 @@ function processLeague({ league, groupName, createNodeId }) {
       content: nodeContent,
       contentDigest: createContentDigest(league),
     },
-  })
+  }
   return nodeData
 }
