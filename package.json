@@ -1,6 +1,6 @@
 {
   "name": "gatsby-source-ttlive",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Gatsby source plugin to source nodes from TT-Live data",
   "main": "./dist/gatsby-node.js",
   "files": [
