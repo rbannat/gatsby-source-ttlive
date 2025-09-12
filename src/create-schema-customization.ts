@@ -19,6 +19,7 @@ export const createSchemaCustomization: GatsbyNode[`createSchemaCustomization`] 
     type PlayerScore implements Node {
       won: Int
       lost: Int
+      position: String
       gamesPlayed: Int
       pk1Diff: [Int]
       pk2Diff: [Int]

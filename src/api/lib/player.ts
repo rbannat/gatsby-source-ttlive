@@ -9,7 +9,7 @@ export interface Player {
 export interface PlayerScore {
   playerId: number
   teamId: number
-  position: number
+  position: string
   isSecondHalf: boolean
   gamesPlayed: number
   pk1Diff: number[] | null
@@ -48,7 +48,7 @@ export function normalizePlayer(
       {
         playerId: ID,
         teamId,
-        position: Position,
+        position: typeof Position === 'string' ? Position : Position.toString(),
         isSecondHalf,
         gamesPlayed: Teilnahme ?? 0,
         pk1Diff: PK1 ? getResult(PK1) : null,
