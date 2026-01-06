@@ -11,3 +11,8 @@ export const CACHE_KEYS = {
 export const ERROR_CODES = {
   GraphQLSourcing: `10000`,
 } as const
+
+const now = new Date()
+const month = now.getMonth() // 0 = Jan, 8 = Sep
+
+export const firstHalfCompleted = month < 8

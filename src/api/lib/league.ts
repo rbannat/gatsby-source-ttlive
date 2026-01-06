@@ -1,3 +1,4 @@
+import { firstHalfCompleted } from '@/constants'
 import fetchAndParseXML from '../utils/fetch-and-parse-xml'
 import { Fixture, normalizeFixtures } from './fixture'
 import { normalizeTeams, Team } from './team'
@@ -12,7 +13,7 @@ export interface League {
 }
 
 export async function getLeague(leagueId: number): Promise<League | null> {
-  const isSecondHalf = false
+  const isSecondHalf = firstHalfCompleted
   const {
     leagueData,
     teamsData: teamsDataFirstHalf,
