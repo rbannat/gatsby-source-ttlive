@@ -23,8 +23,8 @@
   "author": "René Bannat <r.bannat@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "fast-xml-parser": "^5.2.5",
-    "gatsby-core-utils": "^4.7.0"
+    "fast-xml-parser": "^5.11.1",
+    "gatsby-core-utils": "^4.16.0"
   },
   "repository": {
     "type": "git",
@@ -34,15 +34,15 @@
     "url": "https://github.com/rbannat/gatsby-source-ttlive/issues"
   },
   "devDependencies": {
-    "@eslint/js": "^9.21.0",
-    "eslint": "^9.21.0",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.5",
-    "gatsby": "^5.14.1",
-    "gatsby-plugin-utils": "^4.14.0",
-    "prettier": "^3.0.0",
-    "tsup": "^8.3.5",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.24.1"
+    "gatsby": "^5.16.1",
+    "gatsby-plugin-utils": "^4.16.0",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0"
   },
   "peerDependencies": {
     "gatsby": "^5.0.0"
