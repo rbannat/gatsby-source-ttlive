@@ -25,7 +25,9 @@ export async function getAssociations() {
 
 async function getAssociationsData() {
   try {
-    const response = await fetchAndParseXML(associationsUrl)
+    const response = await fetchAndParseXML(associationsUrl, {
+      alwaysArrayTags: ['verband'],
+    })
     return response?.data?.verband ?? []
   } catch (error) {
     console.error('Error fetching groups data:', error)

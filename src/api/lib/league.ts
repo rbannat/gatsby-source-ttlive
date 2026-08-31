@@ -47,7 +47,9 @@ async function getLeagueData(
     isSecondHalf ? 2 : 1
   }&SpielerRunde=${isSecondHalf ? 2 : 1}`
   try {
-    const response = await fetchAndParseXML(leagueUrl)
+    const response = await fetchAndParseXML(leagueUrl, {
+      alwaysArrayTags: ['Mannschaft', 'Spiel', 'Spieler'],
+    })
     if (response?.error) {
       throw new Error(`Error fetching league data: ${response.error}`)
     }

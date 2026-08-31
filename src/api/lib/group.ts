@@ -19,7 +19,9 @@ export async function getGroups() {
 
 async function getGroupsData() {
   try {
-    const data = await fetchAndParseXML(groupsUrl)
+    const data = await fetchAndParseXML(groupsUrl, {
+      alwaysArrayTags: ['gruppe', 'staffel'],
+    })
     return data?.root?.gruppe ?? []
   } catch (error) {
     console.error('Error fetching groups data:', error)
