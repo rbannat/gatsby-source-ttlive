@@ -1,6 +1,6 @@
 import { Actions, NodePluginArgs } from 'gatsby'
 import { createContentDigest } from 'gatsby-core-utils'
-import { League } from '@/api'
+import type { League } from '@rennitlb/ttlive-client'
 
 export const createLeagueNode = ({
   league,

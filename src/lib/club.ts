@@ -1,6 +1,6 @@
 import { Actions, NodePluginArgs } from 'gatsby'
 import { createContentDigest } from 'gatsby-core-utils'
-import { Club } from '@/api'
+import type { Club } from '@rennitlb/ttlive-client'
 
 export const createClubNodes = ({
   clubs,

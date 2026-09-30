@@ -8,7 +8,7 @@
     "gatsby-node.js"
   ],
   "scripts": {
-    "build": "tsup src/gatsby-node.ts --minify --clean",
+    "build": "tsup",
     "lint": "eslint .",
     "prepack": "npm run build"
   },
@@ -23,7 +23,6 @@
   "author": "René Bannat <r.bannat@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "fast-xml-parser": "^5.11.1",
     "gatsby-core-utils": "^4.16.0"
   },
   "repository": {
@@ -35,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@rennitlb/ttlive-client": "^0.1.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.5",
     "gatsby": "^5.16.1",

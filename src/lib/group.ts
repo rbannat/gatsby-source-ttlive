@@ -1,6 +1,6 @@
 import { Actions, NodePluginArgs } from 'gatsby'
 import { createContentDigest } from 'gatsby-core-utils'
-import { Group } from '@/api'
+import type { Group } from '@rennitlb/ttlive-client'
 
 export const createGroupNodes = ({
   groups,

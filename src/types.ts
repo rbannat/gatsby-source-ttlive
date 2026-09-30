@@ -24,7 +24,8 @@ export interface IPostInput {
 }
 
 interface IPluginOptionsKeys {
-  endpoint: string
+  /** TT-Live association (Verband) ID. Defaults to 397 (BeTTV). */
+  associationId: number
 }
 
 /**
@@ -37,4 +38,6 @@ export interface IPluginOptionsInternal
 /**
  * These are the public TypeScript types for consumption in gatsby-config
  */
-export interface IPluginOptions extends IPluginOptionsKeys, IPluginRefOptions {}
+export interface IPluginOptions
+  extends Partial<IPluginOptionsKeys>,
+    IPluginRefOptions {}

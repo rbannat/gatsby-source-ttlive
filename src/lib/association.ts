@@ -1,6 +1,6 @@
 import { createContentDigest } from 'gatsby-core-utils'
 import { Actions, NodePluginArgs } from 'gatsby'
-import { Association } from '@/api/lib/association'
+import type { Association } from '@rennitlb/ttlive-client'
 
 export const createAssociationNodes = async ({
   associations,

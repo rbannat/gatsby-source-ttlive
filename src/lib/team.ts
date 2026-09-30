@@ -1,6 +1,6 @@
 import { Actions, NodePluginArgs } from 'gatsby'
 import { createContentDigest } from 'gatsby-core-utils'
-import { Fixture, Team } from '@/api'
+import type { Fixture, Team } from '@rennitlb/ttlive-client'
 
 export const createTeamNodes = ({
   teams,

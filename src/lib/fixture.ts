@@ -1,6 +1,6 @@
 import { Actions, NodePluginArgs } from 'gatsby'
 import { createContentDigest } from 'gatsby-core-utils'
-import { Fixture } from '@/api'
+import type { Fixture } from '@rennitlb/ttlive-client'
 
 export const createFixtureNodes = ({
   fixtures,
